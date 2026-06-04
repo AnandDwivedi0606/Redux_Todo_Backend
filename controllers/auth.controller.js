@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const OTP = require("../models/OTP.model");
 const crypto = require("crypto");
 const { transporter } = require("../utils/transorter");
-const { resend } = require("../utils/resendMail");
+const { resend } = require("../utils/resend");
 
 const generateOTP = async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
