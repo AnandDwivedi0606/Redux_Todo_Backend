@@ -1,28 +1,39 @@
 const nodemailer = require("nodemailer");
 const dns = require("dns");
 
+// Force IPv4 first (helps on some cloud providers)
 dns.setDefaultResultOrder("ipv4first");
 
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    requireTLS: true,
+    port: 465, // Use SSL port
+    secure: true, // Must be true for port 465
+
     auth: {
         user: process.env.EMAIL_ID,
-        pass: process.env.EMAIL_PASS,
+        pass: process.env.EMAIL_PASS, // Gmail App Password
     },
-    connectionTimeout: 30000,
-    greetingTimeout: 30000,
-    socketTimeout: 30000,
+
+    connectionTimeout: 60000,
+    greetingTimeout: 60000,
+    socketTimeout: 60000,
+
+    tls: {
+        rejectUnauthorized: false,
+    },
+
+    logger: true,
+    debug: true,
 });
 
-transporter.verify((err) => {
-    if (err) {
-        console.error("SMTP Error:", err);
-    } else {
-        console.log("SMTP Ready");
+// Verify SMTP connection
+(async () => {
+    try {
+        await transporter.verify();
+        console.log("✅ SMTP Ready");
+    } catch (error) {
+        console.error("❌ SMTP Error:", error);
     }
-});
+})();
 
 module.exports = { transporter };
