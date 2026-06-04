@@ -7,7 +7,8 @@ const OTP = require("../models/OTP.model");
 const crypto = require("crypto");
 // const { resend } = require("../utils/resend");
 // const { transporter } = require("../utils/transorter");
-const { brevoTransporter } = require("../utils/brevoTransporter");
+// const { brevoTransporter } = require("../utils/brevoTransporter");
+const apiInstance = require("../utils/mail");
 
 // with resend
 // const generateOTP = async (req, res) => {
@@ -306,6 +307,152 @@ const { brevoTransporter } = require("../utils/brevoTransporter");
 // };
 
 // with nodemailer brevo
+// const generateOTP = async (req, res) => {
+//   const email = req.body.email?.trim().toLowerCase();
+
+//   try {
+//     if (!email) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Email is required",
+//       });
+//     }
+
+//     const existingUser = await User.findOne({ email });
+
+//     if (existingUser) {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "Email already registered. Please log in or reset your password.",
+//       });
+//     }
+
+//     const otp = crypto.randomInt(100000, 1000000).toString();
+
+//     await OTP.findOneAndUpdate(
+//       { email },
+//       {
+//         otp,
+//         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+//       },
+//       {
+//         upsert: true,
+//         new: true,
+//       }
+//     );
+
+//     // Verify SMTP Connection
+//     await brevoTransporter.verify();
+
+//     await brevoTransporter.sendMail({
+//       from: `"Taskflow" <${process.env.BREVO_SENDER}>`,
+//       to: email,
+//       subject: "Your Taskflow Verification Code",
+//       html: `
+//       <!DOCTYPE html>
+//       <html lang="en">
+//       <head>
+//         <meta charset="UTF-8">
+//         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+//       </head>
+//       <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; -webkit-font-smoothing: antialiased;">
+
+//         <!-- Outer Wrapper Table -->
+//         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0f172a; padding: 40px 0;">
+//           <tr>
+//             <td align="center">
+
+//               <!-- Inner Card -->
+//               <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; background-color: #1e293b; border-radius: 16px; border: 1px solid #334155; overflow: hidden;">
+
+//                 <!-- Header with Branding -->
+//                 <tr>
+//                   <td align="center" style="padding: 40px 40px 20px 40px;">
+//                      <!-- Taskflow Icon -->
+//                      <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #f97316, #f59e0b); border-radius: 12px; margin: 0 auto 16px auto; line-height: 48px; text-align: center;">
+//                        <span style="color: #ffffff; font-size: 24px; font-weight: bold; font-family: sans-serif;">⚡</span>
+//                      </div>
+//                      <h1 style="margin: 0; color: #f8fafc; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Taskflow</h1>
+//                   </td>
+//                 </tr>
+
+//                 <!-- Body Content -->
+//                 <tr>
+//                   <td style="padding: 0 40px 40px 40px; text-align: center;">
+//                     <h2 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 20px; font-weight: 600;">Verify Your Email</h2>
+//                     <p style="margin: 0 0 24px 0; color: #94a3b8; font-size: 16px; line-height: 24px;">
+//                       You're almost there! Please use the following 6-digit code to verify your email address and activate your Taskflow account.
+//                     </p>
+
+//                     <!-- OTP Code Box -->
+//                     <table border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto 24px auto;">
+//                       <tr>
+//                         <td align="center" style="background-color: #0f172a; border-radius: 12px; padding: 20px 40px; border: 1px dashed #334155;">
+//                            <span style="color: #f97316; font-size: 36px; font-weight: 800; letter-spacing: 10px; font-family: 'Courier New', Courier, monospace;">
+//                              ${otp}
+//                            </span>
+//                         </td>
+//                       </tr>
+//                     </table>
+
+//                     <p style="margin: 0 0 24px 0; color: #64748b; font-size: 14px; line-height: 20px;">
+//                       This code is valid for <strong style="color: #94a3b8;">10 minutes</strong>. For security reasons, please do not share this code with anyone.
+//                     </p>
+
+//                     <hr style="border: none; border-top: 1px solid #334155; margin: 24px 0;">
+
+//                     <!-- Help Text -->
+//                     <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 20px;">
+//                       If you did not create an account with us, you can safely ignore this email. No further action is required.
+//                     </p>
+//                   </td>
+//                 </tr>
+
+//                 <!-- Footer -->
+//                 <tr>
+//                   <td style="padding: 24px 40px; background-color: #0f172a; text-align: center; border-top: 1px solid #334155;">
+//                     <p style="margin: 0; color: #475569; font-size: 12px; line-height: 18px;">
+//                       This is an automated message, please do not reply directly to this email.
+//                     </p>
+//                     <p style="margin: 8px 0 0 0; color: #475569; font-size: 12px;">
+//                       &copy; ${new Date().getFullYear()} Taskflow. All rights reserved.
+//                     </p>
+//                   </td>
+//                 </tr>
+
+//               </table>
+//             </td>
+//           </tr>
+//         </table>
+//       </body>
+//       </html>
+//     `,
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "OTP sent successfully",
+//     });
+//   } catch (error) {
+//     console.error("Generate OTP Error:", error);
+
+//     try {
+//       if (email) {
+//         await OTP.deleteOne({ email });
+//       }
+//     } catch (cleanupError) {
+//       console.error("OTP cleanup failed:", cleanupError);
+//     }
+
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message || "Failed to send OTP",
+//     });
+//   }
+// };
+
+// with brevo api key
 const generateOTP = async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
 
@@ -341,14 +488,18 @@ const generateOTP = async (req, res) => {
       }
     );
 
-    // Verify SMTP Connection
-    await brevoTransporter.verify();
-
-    await brevoTransporter.sendMail({
-      from: `"Taskflow" <${process.env.BREVO_SENDER}>`,
-      to: email,
+    const response = await apiInstance.sendTransacEmail({
+      sender: {
+        email: process.env.BREVO_SENDER,
+        name: "Taskflow",
+      },
+      to: [
+        {
+          email,
+        },
+      ],
       subject: "Your Taskflow Verification Code",
-      html: `
+      htmlContent: `
       <!DOCTYPE html>
       <html lang="en">
       <head>
@@ -429,12 +580,19 @@ const generateOTP = async (req, res) => {
     `,
     });
 
+    console.log("Brevo Response:", response);
+
     return res.status(200).json({
       success: true,
       message: "OTP sent successfully",
     });
   } catch (error) {
-    console.error("Generate OTP Error:", error);
+    console.error("Generate OTP Error:");
+    console.error(error);
+
+    if (error.response) {
+      console.error("Brevo Response Error:", error.response.body);
+    }
 
     try {
       if (email) {
@@ -798,9 +956,131 @@ const getuserData = async (req, res) => {
 // }
 
 // with nodemailer brevo
+// const forgetPassword = async (req, res) => {
+//   try {
+//     const email = req.body.email?.trim().toLowerCase();
+
+//     const user = await User.findOne({ email })
+
+//     if (!user) {
+//       return res.status(400).json({ message: "User not Found" })
+//     }
+
+//     const token = generateTokenForResetPassword(user._id)
+
+//     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+
+//     // Verify SMTP Connection
+//     await brevoTransporter.verify();
+
+//     await brevoTransporter.sendMail({
+//       from: `"Taskflow" <${process.env.BREVO_SENDER}>`,
+//       from: "Taskflow <onboarding@resend.dev>",
+//       to: email, // list of recipients
+//       subject: "Reset Your Taskflow Password",
+//       html: `
+//       <!DOCTYPE html>
+//       <html lang="en">
+//       <head>
+//         <meta charset="UTF-8">
+//         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+//       </head>
+//       <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; -webkit-font-smoothing: antialiased;">
+
+//         <!-- Outer Wrapper Table -->
+//         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0f172a; padding: 40px 0;">
+//           <tr>
+//             <td align="center">
+
+//               <!-- Inner Card -->
+//               <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; background-color: #1e293b; border-radius: 16px; border: 1px solid #334155; overflow: hidden;">
+
+//                 <!-- Header with Branding -->
+//                 <tr>
+//                   <td align="center" style="padding: 40px 40px 20px 40px;">
+//                      <!-- Taskflow Icon (Simulated with a colored div since images might be blocked) -->
+//                      <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #f97316, #f59e0b); border-radius: 12px; margin: 0 auto 16px auto; line-height: 48px; text-align: center;">
+//                        <span style="color: #ffffff; font-size: 24px; font-weight: bold; font-family: sans-serif;">⚡</span>
+//                      </div>
+//                      <h1 style="margin: 0; color: #f8fafc; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Taskflow</h1>
+//                   </td>
+//                 </tr>
+
+//                 <!-- Body Content -->
+//                 <tr>
+//                   <td style="padding: 0 40px 40px 40px; text-align: center;">
+//                     <h2 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 20px; font-weight: 600;">Reset Your Password</h2>
+//                     <p style="margin: 0 0 24px 0; color: #94a3b8; font-size: 16px; line-height: 24px;">
+//                       We received a request to reset the password for your account. No worries, it happens! Click the button below to create a new password.
+//                     </p>
+
+//                     <!-- Bulletproof CTA Button -->
+//                     <table border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+//                       <tr>
+//                         <td align="center" style="border-radius: 12px; background-color: #f97316;">
+//                           <a href="${resetUrl}" target="_blank" style="display: inline-block; padding: 14px 32px; font-family: 'Segoe UI', sans-serif; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 12px; border: 1px solid #f97316;">
+//                             Reset Password
+//                           </a>
+//                         </td>
+//                       </tr>
+//                     </table>
+
+//                     <p style="margin: 24px 0 0 0; color: #64748b; font-size: 14px; line-height: 20px;">
+//                       This link will expire in <strong style="color: #94a3b8;">15 minutes</strong>.
+//                     </p>
+
+//                     <hr style="border: none; border-top: 1px solid #334155; margin: 24px 0;">
+
+//                     <!-- Fallback Text -->
+//                     <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 20px;">
+//                       If the button above doesn't work, copy and paste the following URL into your browser:
+//                     </p>
+//                     <p style="margin: 8px 0 0 0; word-break: break-all;">
+//                       <a href="${resetUrl}" style="color: #f97316; font-size: 13px; text-decoration: underline;">${resetUrl}</a>
+//                     </p>
+//                   </td>
+//                 </tr>
+
+//                 <!-- Footer -->
+//                 <tr>
+//                   <td style="padding: 24px 40px; background-color: #0f172a; text-align: center; border-top: 1px solid #334155;">
+//                     <p style="margin: 0; color: #475569; font-size: 12px; line-height: 18px;">
+//                       If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.
+//                     </p>
+//                     <p style="margin: 8px 0 0 0; color: #475569; font-size: 12px;">
+//                       &copy; ${new Date().getFullYear()} Taskflow. All rights reserved.
+//                     </p>
+//                   </td>
+//                 </tr>
+
+//               </table>
+//             </td>
+//           </tr>
+//         </table>
+//       </body>
+//       </html>
+//     `,
+//     })
+
+//     return res.status(201).json({ success: true, message: "Password reset email sent successfully" })
+
+//   } catch (error) {
+//     // console.log(error);
+//     return res.status(500).json({ success: false, message: "Email Send Error" })
+//   }
+// }
+
+// with brevo api key
 const forgetPassword = async (req, res) => {
   try {
     const email = req.body.email?.trim().toLowerCase();
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
 
     const user = await User.findOne({ email })
 
@@ -812,15 +1092,18 @@ const forgetPassword = async (req, res) => {
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${token}`;
 
-    // Verify SMTP Connection
-    await brevoTransporter.verify();
-
-    await brevoTransporter.sendMail({
-      from: `"Taskflow" <${process.env.BREVO_SENDER}>`,
-      from: "Taskflow <onboarding@resend.dev>",
-      to: email, // list of recipients
+    const response = await apiInstance.sendTransacEmail({
+      sender: {
+        email: process.env.BREVO_SENDER,
+        name: "Taskflow",
+      },
+      to: [
+        {
+          email,
+        },
+      ],
       subject: "Reset Your Taskflow Password",
-      html: `
+      htmlContent: `
       <!DOCTYPE html>
       <html lang="en">
       <head>
@@ -904,11 +1187,21 @@ const forgetPassword = async (req, res) => {
     `,
     })
 
+    console.log("Password Reset Email Sent:", response);
+
     return res.status(201).json({ success: true, message: "Password reset email sent successfully" })
 
   } catch (error) {
-    // console.log(error);
-    return res.status(500).json({ success: false, message: "Email Send Error" })
+    console.error("Forget Password Error:", error);
+
+    if (error.response) {
+      console.error(error.response.body);
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Email Send Error",
+    });
   }
 }
 
