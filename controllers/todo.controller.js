@@ -1,6 +1,6 @@
 const Todo = require("../models/Todo.model");
 
-const createNewTodo = async (req, res) => {
+const createNewTodo = async (req, res) => {    
     try {
         const { title, dueDate, priority } = req.body
         const userId = req?.user?._id;

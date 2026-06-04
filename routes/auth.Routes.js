@@ -1,8 +1,10 @@
 const express = require("express")
 const authRoutes = express.Router()
-const { registerUser, loginUser, getuserData, forgetPassword, resetPassword, changeName,changePassword } = require("../controllers/auth.controller")
+const { generateOTP, verifyEmail, registerUser, loginUser, getuserData, forgetPassword, resetPassword, changeName, changePassword } = require("../controllers/auth.controller")
 const Authorization = require("../middleware/authMiddleware")
 
+authRoutes.post("/generate-otp", generateOTP)
+authRoutes.post("/verify-email", verifyEmail)
 authRoutes.post("/register", registerUser)
 authRoutes.post("/login", loginUser)
 authRoutes.get("/getData", Authorization, getuserData)

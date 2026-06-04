@@ -3,8 +3,179 @@ const bcrypt = require("bcryptjs");
 const generateToken = require("../utils/jwt");
 const nodemailer = require("nodemailer");
 const generateTokenForResetPassword = require("../utils/generateTokenForResetPassword");
-const jwt = require("jsonwebtoken")
+const jwt = require("jsonwebtoken");
+const OTP = require("../models/OTP.model");
 
+const generateOTP = async (req, res) => {
+  try {
+    const { email } = req.body
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const user = await User.findOne({ email })
+
+    if (user) {
+      return res.status(400).json({ success: false, message: "Email already registered. Please log in or reset your password." })
+    }
+
+    await OTP.findOneAndUpdate(
+      { email },
+      {
+        otp,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000)
+      },
+      {
+        upsert: true,
+        new: true
+      }
+    );
+
+    // Create a transporter using SMTP
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_ID,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_ID, // sender address
+      to: email, // list of recipients
+      subject: "Your Taskflow Verification Code",
+      html: `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; -webkit-font-smoothing: antialiased;">
+
+        <!-- Outer Wrapper Table -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0f172a; padding: 40px 0;">
+          <tr>
+            <td align="center">
+
+              <!-- Inner Card -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; background-color: #1e293b; border-radius: 16px; border: 1px solid #334155; overflow: hidden;">
+
+                <!-- Header with Branding -->
+                <tr>
+                  <td align="center" style="padding: 40px 40px 20px 40px;">
+                     <!-- Taskflow Icon -->
+                     <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #f97316, #f59e0b); border-radius: 12px; margin: 0 auto 16px auto; line-height: 48px; text-align: center;">
+                       <span style="color: #ffffff; font-size: 24px; font-weight: bold; font-family: sans-serif;">⚡</span>
+                     </div>
+                     <h1 style="margin: 0; color: #f8fafc; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Taskflow</h1>
+                  </td>
+                </tr>
+
+                <!-- Body Content -->
+                <tr>
+                  <td style="padding: 0 40px 40px 40px; text-align: center;">
+                    <h2 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 20px; font-weight: 600;">Verify Your Email</h2>
+                    <p style="margin: 0 0 24px 0; color: #94a3b8; font-size: 16px; line-height: 24px;">
+                      You're almost there! Please use the following 6-digit code to verify your email address and activate your Taskflow account.
+                    </p>
+
+                    <!-- OTP Code Box -->
+                    <table border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto 24px auto;">
+                      <tr>
+                        <td align="center" style="background-color: #0f172a; border-radius: 12px; padding: 20px 40px; border: 1px dashed #334155;">
+                           <span style="color: #f97316; font-size: 36px; font-weight: 800; letter-spacing: 10px; font-family: 'Courier New', Courier, monospace;">
+                             ${otp}
+                           </span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style="margin: 0 0 24px 0; color: #64748b; font-size: 14px; line-height: 20px;">
+                      This code is valid for <strong style="color: #94a3b8;">10 minutes</strong>. For security reasons, please do not share this code with anyone.
+                    </p>
+
+                    <hr style="border: none; border-top: 1px solid #334155; margin: 24px 0;">
+
+                    <!-- Help Text -->
+                    <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 20px;">
+                      If you did not create an account with us, you can safely ignore this email. No further action is required.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="padding: 24px 40px; background-color: #0f172a; text-align: center; border-top: 1px solid #334155;">
+                    <p style="margin: 0; color: #475569; font-size: 12px; line-height: 18px;">
+                      This is an automated message, please do not reply directly to this email.
+                    </p>
+                    <p style="margin: 8px 0 0 0; color: #475569; font-size: 12px;">
+                      &copy; ${new Date().getFullYear()} Taskflow. All rights reserved.
+                    </p>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `,
+    });
+
+    res.status(200).json({ success: true })
+
+  } catch (error) {
+    // console.log(error);
+
+    return res.status(500).json({ success: false, message: "Failed to send OTP" })
+  }
+
+}
+
+const verifyEmail = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const otpRecord = await OTP.findOne({ email });
+
+    if (!otpRecord) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP expired or invalid"
+      });
+    }
+
+    if (otpRecord.otp !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP"
+      });
+    }
+
+    await OTP.deleteOne({ _id: otpRecord._id });
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP verified successfully"
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error"
+    });
+  }
+};
 
 const registerUser = async (req, res) => {
   try {
@@ -103,23 +274,6 @@ const forgetPassword = async (req, res) => {
       },
     });
 
-    // const info = await transporter.sendMail({
-    //     from: process.env.EMAIL_ID, // sender address
-    //     to: email, // list of recipients
-    //     subject: "Reset Your Password",
-    //     html: `
-    //         <h2>Password Reset Request</h2>
-
-    //         <p>Click the button below to reset your password:</p>
-
-    //         <a href="${resetUrl}">
-    //             Reset Password
-    //         </a>
-
-    //         <p>This link expires in 15 minutes.</p>
-    //     `,
-    // });
-
     const info = await transporter.sendMail({
       from: process.env.EMAIL_ID, // sender address
       to: email, // list of recipients
@@ -207,8 +361,6 @@ const forgetPassword = async (req, res) => {
       </html>
     `,
     });
-
-    console.log("Message sent: %s", info.messageId);
 
     return res.status(201).json({ success: true, message: "Password reset email sent successfully" })
 
@@ -352,4 +504,4 @@ const changePassword = async (req, res) => {
 }
 
 
-module.exports = { registerUser, loginUser, getuserData, forgetPassword, resetPassword, changeName, changePassword }
+module.exports = { generateOTP, verifyEmail, registerUser, loginUser, getuserData, forgetPassword, resetPassword, changeName, changePassword }
