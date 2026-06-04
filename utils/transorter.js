@@ -1,3 +1,4 @@
+// with port 587
 // const nodemailer = require("nodemailer");
 // const dns = require("dns");
 
@@ -56,7 +57,7 @@
 
 
 
-
+// with port 465
 const nodemailer = require("nodemailer");
 const dns = require("dns");
 
