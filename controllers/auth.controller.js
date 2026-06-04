@@ -1,20 +1,21 @@
 const User = require("../models/User.model");
 const bcrypt = require("bcryptjs");
 const generateToken = require("../utils/jwt");
-const nodemailer = require("nodemailer");
 const generateTokenForResetPassword = require("../utils/generateTokenForResetPassword");
 const jwt = require("jsonwebtoken");
 const OTP = require("../models/OTP.model");
+const crypto = require("crypto");
+const { transporter } = require("../utils/transorter");
 
 const generateOTP = async (req, res) => {
+  const email = req.body.email?.trim().toLowerCase();
   try {
-    const { email } = req.body
 
     if (!email) {
       return res.status(400).json({ success: false, message: "Email is required" });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
 
     const user = await User.findOne({ email })
 
@@ -34,19 +35,8 @@ const generateOTP = async (req, res) => {
       }
     );
 
-    // Create a transporter using SMTP
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_ID,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
     const info = await transporter.sendMail({
-      from: process.env.EMAIL_ID, // sender address
+      from: `"Taskflow" <${process.env.EMAIL_ID}>`,
       to: email, // list of recipients
       subject: "Your Taskflow Verification Code",
       html: `
@@ -130,14 +120,28 @@ const generateOTP = async (req, res) => {
     `,
     });
 
+    if (!info.messageId) {
+      return res.status(400).json({ success: false, message: "Email not sent" })
+    }
+
     res.status(200).json({ success: true })
 
   } catch (error) {
-    // console.log(error);
+    console.error(error);
 
-    return res.status(500).json({ success: false, message: "Failed to send OTP" })
+    try {
+      if (email) {
+        await OTP.deleteOne({ email });
+      }
+    } catch (cleanupError) {
+      console.error("OTP cleanup failed:", cleanupError);
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to send OTP"
+    });
   }
-
 }
 
 const verifyEmail = async (req, res) => {
@@ -251,7 +255,7 @@ const getuserData = async (req, res) => {
 
 const forgetPassword = async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = req.body.email?.trim().toLowerCase();
 
     const user = await User.findOne({ email })
 
@@ -263,19 +267,8 @@ const forgetPassword = async (req, res) => {
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${token}`;
 
-    // Create a transporter using SMTP
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_ID,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
     const info = await transporter.sendMail({
-      from: process.env.EMAIL_ID, // sender address
+      from: `"Taskflow" <${process.env.EMAIL_ID}>`,
       to: email, // list of recipients
       subject: "Reset Your Taskflow Password",
       html: `
@@ -362,11 +355,15 @@ const forgetPassword = async (req, res) => {
     `,
     });
 
+    if (!info.messageId) {
+      return res.status(400).json({ success: false, message: "Email not sent" })
+    }
+
     return res.status(201).json({ success: true, message: "Password reset email sent successfully" })
 
   } catch (error) {
-    console.log(error);
-
+    // console.log(error);
+    return res.status(500).json({ success: false, message: "Email Send Error" })
   }
 }
 
