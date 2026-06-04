@@ -5,7 +5,7 @@ const generateTokenForResetPassword = require("../utils/generateTokenForResetPas
 const jwt = require("jsonwebtoken");
 const OTP = require("../models/OTP.model");
 const crypto = require("crypto");
-const { transporter } = require("../utils/transorter");
+// const { transporter } = require("../utils/transorter");
 const { resend } = require("../utils/resend");
 
 const generateOTP = async (req, res) => {
@@ -120,6 +120,9 @@ const generateOTP = async (req, res) => {
       </html>
     `,
     })
+
+    console.log("send");
+    
 
     if (error) {
       console.error("Resend Error:", error);
