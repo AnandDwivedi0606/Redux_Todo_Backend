@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const OTP = require("../models/OTP.model");
 const crypto = require("crypto");
 const { transporter } = require("../utils/transorter");
+const { resend } = require("../utils/resendMail");
 
 const generateOTP = async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
@@ -35,8 +36,8 @@ const generateOTP = async (req, res) => {
       }
     );
 
-    const info = await transporter.sendMail({
-      from: `"Taskflow" <${process.env.EMAIL_ID}>`,
+    const { data, error } = await resend.emails.send({
+      from: "Taskflow <onboarding@resend.dev>",
       to: email, // list of recipients
       subject: "Your Taskflow Verification Code",
       html: `
@@ -118,10 +119,17 @@ const generateOTP = async (req, res) => {
       </body>
       </html>
     `,
-    });
+    })
 
-    if (!info.messageId) {
-      return res.status(400).json({ success: false, message: "Email not sent" })
+    if (error) {
+      console.error("Resend Error:", error);
+
+      await OTP.deleteOne({ email });
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send OTP",
+      });
     }
 
     res.status(200).json({ success: true })
@@ -267,8 +275,8 @@ const forgetPassword = async (req, res) => {
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${token}`;
 
-    const info = await transporter.sendMail({
-      from: `"Taskflow" <${process.env.EMAIL_ID}>`,
+    const { data, error } = await resend.emails.send({
+      from: "Taskflow <onboarding@resend.dev>",
       to: email, // list of recipients
       subject: "Reset Your Taskflow Password",
       html: `
@@ -353,10 +361,17 @@ const forgetPassword = async (req, res) => {
       </body>
       </html>
     `,
-    });
+    })
 
-    if (!info.messageId) {
-      return res.status(400).json({ success: false, message: "Email not sent" })
+    if (error) {
+      console.error("Resend Error:", error);
+
+      await OTP.deleteOne({ email });
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send reset link",
+      });
     }
 
     return res.status(201).json({ success: true, message: "Password reset email sent successfully" })
