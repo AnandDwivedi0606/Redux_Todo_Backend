@@ -30,5 +30,6 @@ const PORT = process.env.PORT
 
 app.listen(PORT, async () => {
     await connectDB()
-    console.log(`Server is running on PORT: http://localhost:${PORT}`)
+    console.log(`Server is running on PORT: https://taskflow-api-48ck.onrender.com`)
+    // console.log(`Server is running on PORT: http://localhost:${PORT}`)
 })
